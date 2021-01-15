@@ -1,7 +1,6 @@
+// npm init
+// npm install express sequelize body-parser mysql2 jsonwebtoken --save
 
-// 7. Ajouter la méthode db.sequelize.sync(); dans le fichier server.js
-// Explication : La méthode sync() permet de synchroniser les models sequelize avec la base de données.
-//    npm install express --save
 const express = require('express');
 const bodyParser = require('body-parser');
 

@@ -5,7 +5,7 @@ const Teacher = db.teachers;
 
 // https://sequelize.org/master/manual/model-querying-basics.html#simple-select-queries
 
-// GET
+// GET /teachers
 exports.getAll = async (req, res) => {
    //récupération du token
    let token = req.headers['x-access-token'];
@@ -27,7 +27,7 @@ exports.getAll = async (req, res) => {
    }
 };
 
-// GET with id
+// GET /teachers/id
 exports.getById = async (req, res) => {
    const id = req.params.id;
    try {

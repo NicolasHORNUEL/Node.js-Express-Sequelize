@@ -5,7 +5,6 @@ const Student = db.students;
 const Teacher = db.teachers;
 const TeacherClass = require('../models/teacher');
 const StudentClass = require('../models/student');
-const studentsService = require('../services/students.services')
 
 // POST /auth/login  req.body.email + req.body.password = token.id
 exports.login = async (req, res) => {
@@ -44,10 +43,9 @@ exports.register = async (req, res) => {
                 let result = await Teacher.create(newTeacher, {include: [ User ]}); 
                 res.status(200).json(result);
             } else {
-                let age = studentsService.getAge(req.body.birthdate)
-                let newStudent = new StudentClass(req.body, age);
+                let newStudent = new StudentClass(req.body);
                 let result = await Student.create(newStudent, {include: [ User ]});
-                res.status(200).json(result);
+                res.status(200).json({result, age:newStudent.age});
             }
         } else {
             res.status(409).json({message: "Cet email est déjà utilisé"});
