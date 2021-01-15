@@ -5,43 +5,31 @@ https://sequelize.org/v5/manual/data-types.html
 On exporte ici une méthode anonyme qui prend en paramètre "sequelize" et "Sequelize". */
 
 module.exports = (sequelize, Sequelize) => {
-    const Lesson = sequelize.define("Lessons", {
+    const Publication = sequelize.define("Publications", {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
         allowNull: false
       },
+      creation_date: {
+        type: Sequelize.DATE,
+        allowNull: false
+      },
       title: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      hours: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      description: {
+      body_text: {
         type: Sequelize.TEXT,
         allowNull: false
       },
-      teacher: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      file_name: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      starting_date: {
-        type: Sequelize.DATE,
-        allowNull: false
-      },
-      ending_date: {
-        type: Sequelize.DATE,
+      type: {
+        type: Sequelize.INTEGER,
         allowNull: false
       },
     },{
         timestamps: false
     });
-    return Lesson;
+    return Publication;
   };

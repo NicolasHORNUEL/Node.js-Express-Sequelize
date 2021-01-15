@@ -9,7 +9,7 @@
 module.exports = {
     HOST:"localhost",
     USER: 'root',
-    PASSWORD:'',
-    DB:'expressdb',
+    PASSWORD:'Nicoboy%357',
+    DB:'sequelizedb',
     DIALECT: 'mysql'
 };
