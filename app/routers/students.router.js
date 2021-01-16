@@ -5,9 +5,11 @@ const studentController = require('../controller/students.controller');
 // cet endroit n'est accessible que pour les utilisateurs authentifiés: dans req.header["x-access-token"]
 router.get('/', studentController.getAll);
 router.get('/:id', studentController.getById);
+router.get('/add-friend/:id1/:id2', studentController.addFriend);
+router.get('/remove-friend/:id1/:id2', studentController.removeFriend)
 router.get('/add-student-to-lesson/:id1/:id2', studentController.addLesson)
-router.post('/', studentController.create);
-router.put('/:id', studentController.update);
-router.delete('/:id', studentController.remove);
+//router.post('/', studentController.create);
+//router.put('/:id', studentController.update);
+//router.delete('/:id', studentController.remove);
 
 module.exports = router;

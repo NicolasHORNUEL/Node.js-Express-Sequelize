@@ -16,6 +16,6 @@ exports.verifyToken = (token) => {
 
 // génére le token
 exports.signToken = (id) => {
-    let token = jwt.sign({ id: id }, config.secret, { expiresIn: 3600 });
+    let token = jwt.sign({ id: id }, config.secret, { expiresIn: 86400 }); //1h:3600 24h:86400
     return token;
 }

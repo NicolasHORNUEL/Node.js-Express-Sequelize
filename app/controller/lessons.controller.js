@@ -1,86 +1,121 @@
 const db = require("../models/db");
 const Lesson = db.lessons;
-const services = require("../services/lessons.services");
+const User = db.users;
+const Teacher = db.teachers;
+const Student = db.students;
+const jwt = require("../services/auth.services");
+const LessonClass = require('../models/lessons');
+const { lessons } = require("../models/db");
 
-// https://sequelize.org/master/manual/model-querying-basics.html#simple-select-queries
 
-// GET
+// GET /lessons
 exports.getAll = async (req, res) => {
    try {
-      let data = await Lesson.findAll();
-      data = services(data);
-      res.json(data);
+      let result = await Lesson.findAll({raw: true})
+      let newResult = result.map(element => new LessonClass(element));
+      res.status(200).json(newResult);
    } catch (err) {
-      res.status(500).send({message: err.message || "Some error occurred while retrieving lessons."});
+      res.status(500).send({message: err.message || "Erreur lors de la récupération des cours."});
    }
 };
 
-// GET with {lesson_id}
+// GET /lessons/:id           (Si authentifié en tant qu'étudiant alors je m'inscris au cours)
 exports.getById = async (req, res) => {
    const id = req.params.id;
    try {
-      let data = await Lesson.findByPk(id);
-      data = services(data);
-      res.json(data);
-   } catch (err) {
-      res.status(500).send({message: "Error retrieving Lesson with id=" + id});
-   }
-}
-
- // POST
- exports.create = async (req, res) => {
-   if (!req.body.title) {
-      res.status(400).send({message: "Content can not be empty!"});
-      return;
-   }
-   try {
-      const lesson = {
-         title: req.body.title,
-         hours: req.body.hours,
-         description: req.body.description,
-         teacher: req.body.teacher,
-         file_name: req.body.file_name,
-         starting_date: req.body.starting_date,
-         ending_date: req.body.ending_date
-      };
-      console.log(lesson);
-      let data = await Lesson.create(lesson);
-      data = services(data);
-      res.json(data);
-   } catch (err) {
-      res.status(500).send({ message: err.message || "Some error occurred while creating the Lesson."});
-   }
-}
-
- // PUT with  {lesson_id}
- exports.update = async (req, res) => {
-   const id = req.params.id;
-   try {
-      let data = await Lesson.update(req.body, {where: {id: id}});
-      if (data.length == 1) {
-         let data = await Lesson.findByPk(id);
-         data = services(data);
-         res.json({message: "Lesson was updated successfully.",data});
+      let result = await Lesson.findOne({where: {id: id}})
+      let newResult = new LessonClass(result);
+      let token = req.headers['x-access-token']; //récupération du token
+      let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
+      if(!verifytoken) {
+         res.status(200).json(newResult);
       } else {
-         res.send({message: `Cannot update Lesson with id=${id}. Maybe Lesson was not found or req.body is empty!`});
+         let user = await User.findOne({where: {id: verifytoken}});
+         let student = await user.getStudent();
+         await student.addLesson(result); // = await result.addStudent(student)
+         res.status(200).json({message: "Vous êtes inscrit au cours suivant : ", newResult});
       }
    } catch (err) {
-      res.status(500).send({ message: "Error updating Lesson with id=" + id});
-   }  
+      res.status(500).send({message: "Erreur lors de la récupération du cours dont l'id est : " + id});
+   }
 }
 
-// DELETE with  {lesson_id}
+ // POST /lessons with token
+ exports.create = async (req, res) => {
+   let token = req.headers['x-access-token']; //récupération du token
+   let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
+   if(!verifytoken) {
+      res.status(401).json({message: "Accès interdit"});
+   } else {
+      const user = await User.findOne({where: {id: verifytoken}});
+      if (!req.body && user.dataValues.type != 1) {
+         res.status(400).send({message: "Tous les champs sont obligatoires!"});
+         return;
+      }
+      try {
+         const teacher = await user.getTeacher(); // obtenir le professeur associé au token
+         let newLesson = new LessonClass(req.body); // on créé une instance de la class Lesson
+         let data = await Lesson.create(newLesson); // on créé un cours dans la base de donnée avec l'objet précédent
+         await teacher.addLesson(data); // on associe le cours au professeur
+         data.dataValues.is_finished = newLesson.is_finished;
+         res.status(200).json(data);
+      } catch (err) {
+         res.status(500).send({ message: err.message || "Erreur lors de la création du cours."});
+      }
+   }
+}
+
+ // PUT /lessons/:id with token
+ exports.update = async (req, res) => {
+   let token = req.headers['x-access-token']; //récupération du token
+   let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
+   if(!verifytoken) {
+      res.status(401).json({message: "Accès interdit"});
+   } else {
+      const id = req.params.id;
+      try {
+         let data = await Lesson.findByPk(id);
+         let userToken = await User.findOne({where: {id: verifytoken}});
+         let teacher = await userToken.getTeacher();
+         let result = await data.hasTeacher(teacher);
+         if (result) {
+            await Lesson.update(req.body, {where: {id: id}});
+            let newLesson = new LessonClass(req.body);
+            newLesson.id = id;
+            res.status(200).json({message: "Le cours a été mis à jour.",newLesson});
+         } else {
+            res.status(401).json({message: "Vous ne disposez pas des droits."});
+         }
+      } catch (err) {
+         res.status(500).send({ message: `Erreur : le cours id:${id} n'existe pas.`});
+      }  
+   }
+}
+
+// DELETE /lessons/:id with token
 exports.remove = async (req, res) => {
-   const id = req.params.id;
-   try {
-      await Lesson.destroy({where: { id: id }});
-      let data = await Lesson.findByPk(id);
-      if (data === null) {
-         res.send({ message: "Lesson was deleted successfully!"});
-       } else {
-         res.send({message: `Cannot delete Lesson with id=${id}. Maybe Lesson was not found!`});
-       }
-   } catch (err) {
-      res.status(500).send({message: "Could not delete Lesson with id=" + id});
+   let token = req.headers['x-access-token']; //récupération du token
+   let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
+   if(!verifytoken) {
+      res.status(401).json({message: "Accès interdit"});
+   } else {
+      const id = req.params.id;
+      try {
+         let data = await Lesson.findByPk(id);
+         let userToken = await User.findOne({where: {id: verifytoken}});
+         let teacher = await userToken.getTeacher();
+         let ship = await data.hasTeacher(teacher);
+         if (ship) {
+            await Lesson.destroy({where: { id: id }});
+            let result = await Lesson.findByPk(id);
+            if (result === null) {
+               res.status(200).send({ message: "Le cours a été supprimé!"});
+            }
+         } else {
+            res.status(401).json({message: "Vous ne disposez pas des droits."});
+         }
+      } catch (err) {
+         res.status(500).send({message: `Erreur : le cours id:${id} n'existe pas.`});
+      }
    }
 }

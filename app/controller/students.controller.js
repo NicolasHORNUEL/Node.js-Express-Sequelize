@@ -1,45 +1,101 @@
-const { response } = require("express");
 const db = require("../models/db");
 const jwt = require("../services/auth.services");
 const Student = db.students;
 const Lesson = db.lessons;
-const services = require("../services/students.services");
+const StudentClass = require('../models/student');
 
-// https://sequelize.org/master/manual/model-querying-basics.html#simple-select-queries
-
-// GET
+// GET /students avec token
 exports.getAll = async (req, res) => {
-   //récupération du token
-   let token = req.headers['x-access-token'];
-   console.log("dans students.controller.js, méthode getAll, req.headers['x-access-token'] : ", token);
-   //vérification de la validité du token
-   let verifytoken = jwt.verifyToken(token);
-   console.log("dans students.controller.js, méthode getAll, jwt.verifyToken(req.headers['x-access-token']) : ",verifytoken);
+   let token = req.headers['x-access-token']; //récupération du token
+   let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
    if(!verifytoken) {
-      //si token n'est pas valide : utilisateur non authentifié
-      res.status(401);
-      res.json({message: "Accès interdit"});
+      res.status(401).json({message: "Accès interdit"});
    } else {
       try {
-         //let data = await Student.findAll();
-         let data = await Student.findAll({raw: true})
-         data = services(data);
-         res.json(data);
+         let result = await Student.findAll({raw: true})
+         let newResult = result.map(element => new StudentClass(element));
+         res.status(200).json(newResult);
       } catch (err) {
-         res.status(500).send({message: err.message || "Some error occurred while retrieving students."});
+         res.status(500).send({message: err.message || "Une erreur s'est produite lors de la récupération des étudiants."});
       }
    }
 };
 
-// GET with {student_id}
+// GET /students/:id avec token
 exports.getById = async (req, res) => {
-   const id = req.params.id;
-   try {
-      let data = await Student.findByPk(id, {raw: true});
-      data = services(data);
-      res.json(data);
-   } catch (err) {
-      res.status(500).send({message: "Error retrieving Student with id=" + id});
+   let token = req.headers['x-access-token']; //récupération du token
+   let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
+   if(!verifytoken) {
+      res.status(401).json({message: "Accès interdit"});
+   } else {
+      try {
+         const StudentResponse = await Student.findOne({where: {id: req.params.id}});
+         if(!StudentResponse) {
+            res.status(404).json({message: "Aucun utilisateur n'existe avec cet identifiant"});
+            //return;
+         } else {
+            let newStudent = new StudentClass(StudentResponse);
+            res.status(200).json({StudentResponse, age:newStudent.age});
+         }
+      } catch (err) {
+         res.status(500).send({message: "Erreur lors de la récupération de l'étudiant dont l'id est : " + req.params.id});
+      }
+   }
+}
+
+// GET /students/add-friend/:id1/:id2
+exports.addFriend = async (req, res) => {
+   let token = req.headers['x-access-token']; //récupération du token
+   let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
+   if(!verifytoken) {
+      res.status(401).json({message: "Accès interdit"});
+   } else {
+      try {
+         let student1 = await Student.findByPk(req.params.id1);
+         let student2 = await Student.findByPk(req.params.id2);
+         if (student1 != undefined && student2 != undefined)  { 
+            let result = await student1.hasFriend(student2); // on vérifie l'association
+            if (!result) {
+               await student1.setFriend(student2);
+               await student2.setFriend(student1);
+               res.status(200).json({message: "Relation Ajoutée"});
+            } else {
+               res.json({message: "Relation Existante"});
+            }
+         } else {
+            res.status(500).send({message: "Identifiants inconnus"});
+         }
+      } catch (err) {
+         res.status(500).send({message: "Erreur serveur"});
+      }
+   }
+}
+
+// GET /students/remove-friend/:id1/:id2
+exports.removeFriend = async (req, res) => {
+   let token = req.headers['x-access-token']; //récupération du token
+   let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
+   if(!verifytoken) {
+      res.status(401).json({message: "Accès interdit"});
+   } else {
+      try {
+         let student1 = await Student.findByPk(req.params.id1);
+         let student2 = await Student.findByPk(req.params.id2);
+         if (student1 != undefined && student2 != undefined)  { 
+            let result = await student1.hasFriend(student2); // on vérifie l'association
+            if (result) {
+               await student1.removeFriend(student2);
+               await student2.removeFriend(student1);
+               res.status(200).json({message: "Relation Supprimée"});
+            } else {
+               res.json({message: "Relation Inexistante"});
+            }
+         } else {
+            res.status(500).send({message: "Identifiants inconnus"});
+         }
+      } catch (err) {
+         res.status(500).send({message: "Erreur serveur"});
+      }
    }
 }
 
@@ -55,60 +111,5 @@ exports.addLesson = async (req, res) => {
 
    } catch (err) {
       res.status(500).send({message: err});
-   }
-}
-
- // POST
- exports.create = async (req, res) => {
-   if (!req.body) {
-      res.status(400).send({message: "Content can not be empty!"});
-      return;
-   }
-   try {
-      const student = {
-         first_name: req.body.first_name,
-         last_name: req.body.last_name,
-         birthdate: req.body.birthdate,
-         bio: req.body.bio,
-         class: req.body.class
-      };
-      let data = await Student.create(student, {raw: true});
-      data = services(data);
-      res.json(data);
-   } catch (err) {
-      res.status(500).send({ message: err.message || "Some error occurred while creating the Student."});
-   }
-}
-
- // PUT with  {student_id}
- exports.update = async (req, res) => {
-   const id = req.params.id;
-   try {
-      let data = await Student.update(req.body, {where: {id: id}, raw: true});
-      if (data.length == 1) {
-         let data = await Student.findByPk(id, {raw: true});
-         data = services(data);
-         res.json({message: "Student was updated successfully.",data});
-      } else {
-         res.send({message: `Cannot update Student with id=${id}. Maybe Student was not found or req.body is empty!`});
-      }
-   } catch (err) {
-      res.status(500).send({ message: "Error updating Student with id=" + id});
-   }  
-}
-
-// DELETE with  {student_id}
-exports.remove = async (req, res) => {
-   const id = req.params.id;
-   try {
-      await Student.destroy({where: { id: id }, raw: true});
-      let data = await Student.findByPk(id);
-      if (data === null) {
-         res.send({ message: "Student was deleted successfully!"});
-       } else {
-         res.send({message: `Cannot delete Student with id=${id}. Maybe Student was not found!`});
-       }
-   } catch (err) {
-      res.status(500).send({message: "Could not delete Student with id=" + id});
    }
 }

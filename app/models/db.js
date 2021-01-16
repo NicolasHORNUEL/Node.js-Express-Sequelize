@@ -50,7 +50,8 @@ db.comments.belongsTo(db.students);
 // Student est en relation Many-to-Many avec Lesson
 db.students.belongsToMany(db.lessons, {through: 'LessonStudents'})
 db.lessons.belongsToMany(db.students, {through: 'LessonStudents'})
-
+// Student est en relation Many-to-Many avec Student
+db.students.belongsToMany(db.students, { as: 'Friend', through: 'StudentFriends' })
 // Teacher est en relation One-to-Many avec Publication
 db.teachers.hasMany(db.publications);
 db.publications.belongsTo(db.teachers);

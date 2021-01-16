@@ -5,6 +5,7 @@ const Student = db.students;
 const Teacher = db.teachers;
 const TeacherClass = require('../models/teacher');
 const StudentClass = require('../models/student');
+const UserClass = require('../models/user');
 
 // POST /auth/login  req.body.email + req.body.password = token.id
 exports.login = async (req, res) => {
@@ -28,7 +29,7 @@ exports.login = async (req, res) => {
         }
 
     } catch (err) {
-        res.status(500).send({message: "Error retrieving User with email=" + req.body.email});
+        res.status(500).send({message: "Erreur lors de la récupération de l'utilisateur avec email : " + req.body.email});
     }
 }
 
@@ -37,20 +38,27 @@ exports.register = async (req, res) => {
     try {
         const userResponse = await User.findOne({where: {email: req.body.email}});    
         if(!userResponse) {
-            // type = 1 pour teacher , 2 pour student // https://sequelize.org/master/manual/creating-with-associations.html
-            if(req.body.type == 1) {
+            // type = 1 pour teacher , 2 pour student, 3 pour utilisateur
+            if(req.body.type == 1 && Object.keys(req.body).length == 8) {
                 let newTeacher = new TeacherClass(req.body);
                 let result = await Teacher.create(newTeacher, {include: [ User ]}); 
                 res.status(200).json(result);
-            } else {
+            } else if (req.body.type == 2 && Object.keys(req.body).length == 9) {
                 let newStudent = new StudentClass(req.body);
                 let result = await Student.create(newStudent, {include: [ User ]});
                 res.status(200).json({result, age:newStudent.age});
+            } else if (req.body.type == 3 && req.body.password) {
+                let newUser = new UserClass(req.body);
+                let result = await User.create(newUser);
+                res.status(200).json(result);
+            } else {
+                res.status(409).json({message: "Tous les champs sont obligatoires"});
             }
         } else {
             res.status(409).json({message: "Cet email est déjà utilisé"});
         }
     } catch (err) {
-        res.status(500).send({message: "Error retrieving User with email=" + req.body.email});
+        res.status(500).send({message: "Erreur lors de la récupération de l'utilisateur avec email : " + req.body.email});
     }
 }
+
