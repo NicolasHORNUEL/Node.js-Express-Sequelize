@@ -1,7 +1,6 @@
 const db = require("../models/db");
 const jwt = require("../services/auth.services");
 const Student = db.students;
-const Lesson = db.lessons;
 const StudentClass = require('../models/student');
 
 // GET /students avec token
@@ -96,20 +95,5 @@ exports.removeFriend = async (req, res) => {
       } catch (err) {
          res.status(500).send({message: "Erreur serveur"});
       }
-   }
-}
-
-// GET with {add-student-to-lesson/:id1/:id2}
-exports.addLesson = async (req, res) => {
-   try {
-      let student = await Student.findByPk(req.params.id2);
-      let lesson = await Lesson.findByPk(req.params.id1);
-      await lesson.setStudents(student);
-      //res.json("relation ajoutée");
-      let lessons = await student.getLessons();
-      res.json(lessons);
-
-   } catch (err) {
-      res.status(500).send({message: err});
    }
 }

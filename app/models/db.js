@@ -26,12 +26,11 @@ db.publications = require("./publications.models")(sequelize, Sequelize);
 db.comments = require("./comments.models")(sequelize, Sequelize);
 db.teachers = require("./teachers.models")(sequelize, Sequelize);
 
-/* Relation - Type d'association - Exemple
-One-to-One     : hasOne        : Un user a un profile.
-one-to-Many    : hasMany       : Un user peut avoir plusieurs articles.
-Many-to-One    : belongsTo     : Plusieurs articles appartiennent à un user.
-Many-to-Many   : belongsToMany : Les Tags appartiennent aux articles.
-
+/* Relation    : Type d'association : Exemple
+One-to-One     : hasOne             : Un user a un profile.
+one-to-Many    : hasMany            : Un user peut avoir plusieurs articles.
+Many-to-One    : belongsTo          : Plusieurs articles appartiennent à un user.
+Many-to-Many   : belongsToMany      : Les Tags appartiennent aux articles.
 // Relation Many-to-many :une table intermédiaire est créée : {through:'LessonStudents'}
 */
 
@@ -40,7 +39,6 @@ db.students.hasOne(db.users);
 db.users.belongsTo(db.students);
 db.teachers.hasOne(db.users);
 db.users.belongsTo(db.teachers);
-
 // Student est en relation One-to-Many avec Publication
 db.students.hasMany(db.publications);
 db.publications.belongsTo(db.students);
@@ -61,14 +59,11 @@ db.comments.belongsTo(db.teachers);
 // Teacher est en relation Many-to-Many avec Lesson
 db.teachers.belongsToMany(db.lessons, {through: 'LessonTeachers'})
 db.lessons.belongsToMany(db.teachers, {through: 'LessonTeachers'})
-
 // Publication est en relation One-to-Many avec Comment
 db.publications.hasMany(db.comments);
 db.comments.belongsTo(db.publications);
-
 // Lesson est en relation One-to-Many avec Publication
 db.lessons.hasMany(db.publications);
 db.publications.belongsTo(db.lessons);
-
 
 module.exports = db;
