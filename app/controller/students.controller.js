@@ -43,7 +43,7 @@ exports.getById = async (req, res) => {
 }
 
 // GET /students/add-friend/:id1/:id2
-exports.addFriend = async (req, res) => {
+exports.createFriend = async (req, res) => {
    let token = req.headers['x-access-token']; //récupération du token
    let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
    if(!verifytoken) {
@@ -71,7 +71,7 @@ exports.addFriend = async (req, res) => {
 }
 
 // GET /students/remove-friend/:id1/:id2
-exports.removeFriend = async (req, res) => {
+exports.deleteFriend = async (req, res) => {
    let token = req.headers['x-access-token']; //récupération du token
    let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
    if(!verifytoken) {
