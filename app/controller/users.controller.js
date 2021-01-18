@@ -1,5 +1,6 @@
 const db = require("../models/db");
 const jwt = require("../services/auth.services");
+const bcrypt = require("bcrypt");
 const User = db.users;
 const Student = db.students;
 const Teacher = db.teachers;
@@ -18,7 +19,7 @@ exports.login = async (req, res) => {
             return;
         }
 
-        if (req.body.password == userResponse.password) {
+        if (bcrypt.compareSync(req.body.password,userResponse.dataValues.password)) { //req.body.password == userResponse.password
             let student = await userResponse.getStudent(); //dans db.js: db.users.belongsTo(db.students) permet user.getStudent
             let teacher = await userResponse.getTeacher(); //dans db.js: db.users.belongsTo(db.teachers) permet user.getTeacher
             let token = jwt.signToken(userResponse.id);
@@ -38,6 +39,10 @@ exports.register = async (req, res) => {
     try {
         const userResponse = await User.findOne({where: {email: req.body.email}});    
         if(!userResponse) {
+
+            let hashedPassword = bcrypt.hashSync(req.body.password, 10)
+            req.body.password = hashedPassword;
+
             // type = 1 pour teacher , 2 pour student, 3 pour utilisateur
             if(req.body.type == 1 && Object.keys(req.body).length == 8) {
                 let newTeacher = new TeacherClass(req.body);

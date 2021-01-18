@@ -22,9 +22,9 @@ db.sequelize = sequelize;
 db.lessons = require("./lessons.models")(sequelize, Sequelize);
 db.students = require("./students.models")(sequelize, Sequelize);
 db.users = require("./users.models")(sequelize, Sequelize);
+db.teachers = require("./teachers.models")(sequelize, Sequelize);
 db.publications = require("./publications.models")(sequelize, Sequelize);
 db.comments = require("./comments.models")(sequelize, Sequelize);
-db.teachers = require("./teachers.models")(sequelize, Sequelize);
 
 /* Relation    : Type d'association : Exemple
 One-to-One     : hasOne             : Un user a un profile.

@@ -28,12 +28,16 @@ exports.getById = async (req, res) => {
       let token = req.headers['x-access-token']; //récupération du token
       let verifytoken = jwt.verifyToken(token); //vérification de la validité du token
       if(!verifytoken) {
-         res.status(200).json(newResult);
+         res.status(401).json({message: "Accès interdit"});
       } else {
          let user = await User.findOne({where: {id: verifytoken}});
-         let student = await user.getStudent();
-         await student.addLesson(result); // = await result.addStudent(student)
-         res.status(200).json({message: "Vous êtes inscrit au cours suivant : ", newResult});
+         if (user.dataValues.type == 2 && req.body.registration) { // Type 2 pour étudiant
+            let student = await user.getStudent();
+            await student.addLesson(result); // = await result.addStudent(student)
+            res.status(200).json({message: "Vous êtes inscrit au cours suivant : ", newResult});
+         } else {
+            res.status(200).json(newResult);
+         }   
       }
    } catch (err) {
       res.status(500).send({message: "Erreur lors de la récupération du cours dont l'id est : " + id});
