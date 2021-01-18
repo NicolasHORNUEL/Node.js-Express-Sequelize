@@ -1,2 +1,5 @@
 node_modules/
 app/config/db.config.js
+.DS_Store
+app/.DS_Store
+
