@@ -4,7 +4,7 @@ const publicationController = require('../controller/publications.controller');
 
 router.get('/', publicationController.getAll);
 router.get('/:id', publicationController.getById);
-router.post('/', publicationController.create);
+router.post('/:idLesson', publicationController.create);
 router.put('/:id', publicationController.update);
 router.delete('/:id',publicationController.remove);
 
